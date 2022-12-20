@@ -47,7 +47,7 @@ export interface MonthCalendarProps<TDate>
    */
   defaultValue?: TDate | null;
   /**
-   * Callback fired when the value (the selected month) changes.
+   * Callback fired when the value changes.
    * @template TDate
    * @param {TDate | null} value The new value.
    */
@@ -61,7 +61,7 @@ export interface MonthCalendarProps<TDate>
   disableHighlightToday?: boolean;
   onMonthFocus?: (month: number) => void;
   hasFocus?: boolean;
-  onFocusedViewChange?: (newHasFocus: boolean) => void;
+  onFocusedViewChange?: (hasFocus: boolean) => void;
 }
 
 const useUtilityClasses = (ownerState: MonthCalendarProps<any>) => {
@@ -155,7 +155,11 @@ export const MonthCalendar = React.forwardRef(function MonthCalendar<TDate>(
 
   const todayMonth = React.useMemo(() => utils.getMonth(now), [utils, now]);
 
-  const selectedDateOrToday = value ?? now;
+  const selectedDateOrStartOfMonth = React.useMemo(
+    () => value ?? utils.startOfMonth(now),
+    [now, utils, value],
+  );
+
   const selectedMonth = React.useMemo(() => {
     if (value != null) {
       return utils.getMonth(value);
@@ -169,11 +173,11 @@ export const MonthCalendar = React.forwardRef(function MonthCalendar<TDate>(
   }, [now, value, utils, disableHighlightToday]);
   const [focusedMonth, setFocusedMonth] = React.useState(() => selectedMonth || todayMonth);
 
-  const [internalHasFocus, setInternalHasFocus] = useControlled<boolean>({
+  const [internalHasFocus, setInternalHasFocus] = useControlled({
     name: 'MonthCalendar',
     state: 'hasFocus',
     controlled: hasFocus,
-    default: autoFocus,
+    default: autoFocus ?? false,
   });
 
   const changeHasFocus = useEventCallback((newHasFocus: boolean) => {
@@ -213,13 +217,13 @@ export const MonthCalendar = React.forwardRef(function MonthCalendar<TDate>(
       return;
     }
 
-    const newDate = utils.setMonth(selectedDateOrToday, month);
+    const newDate = utils.setMonth(selectedDateOrStartOfMonth, month);
     setValue(newDate);
     onChange?.(newDate);
   });
 
   const focusMonth = useEventCallback((month: number) => {
-    if (!isMonthDisabled(utils.setMonth(selectedDateOrToday, month))) {
+    if (!isMonthDisabled(utils.setMonth(selectedDateOrStartOfMonth, month))) {
       setFocusedMonth(month);
       changeHasFocus(true);
       if (onMonthFocus) {
@@ -281,7 +285,7 @@ export const MonthCalendar = React.forwardRef(function MonthCalendar<TDate>(
       ownerState={ownerState}
       {...other}
     >
-      {utils.getMonthArray(selectedDateOrToday).map((month) => {
+      {utils.getMonthArray(selectedDateOrStartOfMonth).map((month) => {
         const monthNumber = utils.getMonth(month);
         const monthText = utils.format(month, 'monthShort');
         const isSelected = monthNumber === selectedMonth;
@@ -333,7 +337,7 @@ MonthCalendar.propTypes = {
    */
   disabled: PropTypes.bool,
   /**
-   * If `true` disable values before the current time
+   * If `true` disable values before the current date for date components, time for time components and both for date time components.
    * @default false
    */
   disableFuture: PropTypes.bool,
@@ -343,21 +347,21 @@ MonthCalendar.propTypes = {
    */
   disableHighlightToday: PropTypes.bool,
   /**
-   * If `true` disable values after the current time.
+   * If `true` disable values after the current date for date components, time for time components and both for date time components.
    * @default false
    */
   disablePast: PropTypes.bool,
   hasFocus: PropTypes.bool,
   /**
-   * Maximal selectable date. @DateIOType
+   * Maximal selectable date.
    */
   maxDate: PropTypes.any,
   /**
-   * Minimal selectable date. @DateIOType
+   * Minimal selectable date.
    */
   minDate: PropTypes.any,
   /**
-   * Callback fired when the value (the selected month) changes.
+   * Callback fired when the value changes.
    * @template TDate
    * @param {TDate | null} value The new value.
    */
@@ -369,10 +373,9 @@ MonthCalendar.propTypes = {
    */
   readOnly: PropTypes.bool,
   /**
-   * Disable specific months dynamically.
-   * Works like `shouldDisableDate` but for month selection view @DateIOType.
+   * Disable specific month.
    * @template TDate
-   * @param {TDate} month The month to check.
+   * @param {TDate} month The month to test.
    * @returns {boolean} If `true` the month will be disabled.
    */
   shouldDisableMonth: PropTypes.func,

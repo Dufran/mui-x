@@ -2,7 +2,7 @@ import * as React from 'react';
 import { resolveComponentProps, useSlotProps } from '@mui/base/utils';
 import useForkRef from '@mui/utils/useForkRef';
 import { PickersModalDialog } from '../../components/PickersModalDialog';
-import { CalendarOrClockPickerView } from '../../models';
+import { DateOrTimeView } from '../../models';
 import { UseMobilePickerParams, UseMobilePickerProps } from './useMobilePicker.types';
 import { usePicker } from '../usePicker';
 import { onSpaceOrEnter } from '../../utils/utils';
@@ -10,7 +10,8 @@ import { useUtils } from '../useUtils';
 import { LocalizationProvider } from '../../../LocalizationProvider';
 import { WrapperVariantContext } from '../../components/wrappers/WrapperVariantContext';
 import { BaseFieldProps } from '../../models/fields';
-import { PickerViewLayout } from '../../components/PickerViewLayout';
+import { PickersViewLayout } from '../../components/PickersViewLayout';
+import { InferError } from '../validation/useValidation';
 
 /**
  * Hook managing all the single-date mobile pickers:
@@ -20,13 +21,13 @@ import { PickerViewLayout } from '../../components/PickerViewLayout';
  */
 export const useMobilePicker = <
   TDate,
-  TView extends CalendarOrClockPickerView,
-  TExternalProps extends UseMobilePickerProps<TDate, TView>,
+  TView extends DateOrTimeView,
+  TExternalProps extends UseMobilePickerProps<TDate, TView, any, TExternalProps>,
 >({
   props,
   valueManager,
   getOpenDialogAriaText,
-  viewLookup,
+  validator,
 }: UseMobilePickerParams<TDate, TView, TExternalProps>) => {
   const { components, componentsProps, className, format, disabled, localeText } = props;
 
@@ -39,17 +40,18 @@ export const useMobilePicker = <
     layoutProps,
     renderCurrentView,
     fieldProps: pickerFieldProps,
-  } = usePicker({
+  } = usePicker<TDate | null, TDate, TView, TExternalProps, {}>({
     props,
     inputRef,
-    viewLookup,
     valueManager,
+    validator,
+    autoFocusView: true,
     additionalViewProps: {},
     wrapperVariant: 'mobile',
   });
 
   const Field = components.Field;
-  const fieldProps: BaseFieldProps<TDate | null, unknown> = useSlotProps({
+  const fieldProps: BaseFieldProps<TDate | null, InferError<TExternalProps>> = useSlotProps({
     elementType: Field,
     externalSlotProps: componentsProps?.field,
     additionalProps: {
@@ -110,15 +112,18 @@ export const useMobilePicker = <
             // Avoids to render 2 action bar, will be removed once `PickersModalDialog` stop displaying the action bar.
             ActionBar: () => null,
           }}
-          componentsProps={componentsProps}
+          componentsProps={{
+            ...componentsProps,
+            actionBar: undefined,
+          }}
         >
-          <PickerViewLayout
+          <PickersViewLayout
             {...layoutProps}
             components={components}
             componentsProps={componentsProps}
           >
             {renderCurrentView()}
-          </PickerViewLayout>
+          </PickersViewLayout>
         </PickersModalDialog>
       </WrapperVariantContext.Provider>
     </LocalizationProvider>

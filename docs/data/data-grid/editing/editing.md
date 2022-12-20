@@ -92,7 +92,7 @@ You can use the `valueParser` property in the column definition to modify the va
 ```tsx
 const columns: GridColDef[] = [
   {
-    valueParser: (value: GridCellValue, params: GridCellParams) => {
+    valueParser: (value: any, params: GridCellParams) => {
       return value.toLowerCase();
     },
   },
@@ -427,7 +427,7 @@ Instead, use the buttons available in each row or in the toolbar.
 
 See [Editing recipes](/x/react-data-grid/recipes-editing/) for more advanced use cases.
 
-## apiRef [<span class="plan-pro"></span>](/x/introduction/licensing/#pro-plan)
+## apiRef
 
 {{"demo": "EditApiNoSnap.js", "bg": "inline", "hideToolbar": true}}
 
